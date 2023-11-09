@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 
 xy = np.loadtxt('code\mul_input\diabetes.csv.gz',delimiter=',',dtype=np.float32)
 x_data = torch.from_numpy(xy[:,:-1])
@@ -15,7 +17,7 @@ class Model(torch.nn.Module):
         self.linear1 = torch.nn.Linear(8,6)
         self.linear2 = torch.nn.Linear(6,4)
         self.linear3 = torch.nn.Linear(4,1)
-        self.active = torch.nn.Hardtanh()
+        self.active = torch.nn.ReLU()
         self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self,x):
