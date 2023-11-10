@@ -111,7 +111,8 @@ if __name__ == '__main__':
     Ans = Ans.astype(int)
     Ans = np.delete(Ans,0,0)
     # print(Ans)
-    np.savetxt("code/data/titanic/ans.csv",Ans,fmt = '%d',delimiter = ',')
+    H = 'PassengerId,Survived'
+    np.savetxt("code/data/titanic/ans.csv",Ans,fmt = '%d',delimiter = ',',header = H,comments='')
     # plt.plot(epoch_list, loss_list)
     # plt.ylabel('loss_list')
     # plt.xlabel('epoch_list')
