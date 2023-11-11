@@ -5,20 +5,21 @@ import csv
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-
+import torch.onnx
 device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc. 
 
 class DiabetesDataset(Dataset):
     def __init__(self,path):
-        X = np.empty((8,))
+        X = np.empty((7,))
         Y = np.empty((1,))
         with open(path) as F:
             read = csv.DictReader(F)
             for Line in read:
                 if('Survived' in Line.keys()):
-                    Y = np.row_stack((Y,np.array([(1 - 0.01) if float(Line['Survived']) else 0.01])))
+                    Y = np.row_stack((Y,np.array([(0.8) if float(Line['Survived']) else 0.2])))
                 else:
-                    Y = np.row_stack((Y,np.array([float(1)])))
+                    Y = np.row_stack((Y,np.array(float(Line['PassengerId']))))
+                del Line['PassengerId']   
                 del Line['Cabin']
                 del Line['Name']
                 del Line['Ticket']
@@ -47,17 +48,17 @@ class DiabetesDataset(Dataset):
 
 dataset = DiabetesDataset('code/data/titanic/train.csv')
 testset = DiabetesDataset('code/data/titanic/test.csv')
-train_loader = DataLoader(dataset = dataset,batch_size = 300,shuffle = True,num_workers = 2)
+train_loader = DataLoader(dataset = dataset,batch_size = 150,shuffle = True,num_workers = 3)
 
 # print(x_data)
 
 class Model(torch.nn.Module):
     def __init__(self):
         super(Model,self).__init__()
-        self.linear1 = torch.nn.Linear(8,6)
-        self.linear2 = torch.nn.Linear(6,4)
-        self.linear3 = torch.nn.Linear(4,1)
-        self.active = torch.nn.ReLU() 
+        self.linear1 = torch.nn.Linear(7,5)
+        self.linear2 = torch.nn.Linear(5,3)
+        self.linear3 = torch.nn.Linear(3,1)
+        self.active = torch.nn.Sigmoid() 
         self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self,x):
@@ -67,7 +68,7 @@ class Model(torch.nn.Module):
         return x
 
 model = Model().to(device)
-criterion = torch.nn.BCELoss(reduction = 'mean')
+criterion = torch.nn.BCELoss(reduction = 'sum')
 optimizer = torch.optim.SGD(model.parameters(),lr = 0.1)
 
 if __name__ == '__main__':
@@ -93,20 +94,23 @@ if __name__ == '__main__':
         print(epoch,Los)
         epoch_list.append(epoch)
         loss_list.append(Los)
+    # data = testset[0]
+    # inputs,labels = data
+    # inputs = inputs.to(device)
+    # # print(inputs)
+    # torch.onnx.export(model,inputs,'.\model.onnx',export_params=True,opset_version=8,)
     Ans = np.empty((2,))
     for row in range(testset.len):
         data = testset[row]
         inputs,labels = data
         inputs = inputs.to(device)
         # print(inputs)
-        y_pred = model(inputs)
-        optimizer.zero_grad()
-        y_pred.backward()
-        print(inputs[0],y_pred)
-        if(y_pred.item() > 0.45):
-            A = [int(inputs[0].item()),1]
+        y_pred = model(inputs).item()
+        print(labels.item(),y_pred)
+        if(y_pred > 0.5):
+            A = [int(labels.item()),1]
         else:
-            A = [int(inputs[0].item()),0]
+            A = [int(labels.item()),0]
         Ans = np.row_stack((Ans,np.array(A,dtype = int)))
     Ans = Ans.astype(int)
     Ans = np.delete(Ans,0,0)
