@@ -43,6 +43,7 @@ def train(epoch):
         inputs,target = data
         optimizer.zero_grad()
         outputs = model(inputs)
+        print(outputs.size(),target.size())
         loss = criterion(outputs,target)
         loss.backward()
         optimizer.step()
